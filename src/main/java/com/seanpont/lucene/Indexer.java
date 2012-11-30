@@ -27,9 +27,9 @@ public class Indexer {
     public Indexer(String indexDir) throws IOException {
         Directory dir = FSDirectory.open(new File(indexDir));
         
-        Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_40);
+        Analyzer analyzer = new StandardAnalyzer(Version.LUCENE_36);
         
-        IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_40, analyzer);
+        IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_36, analyzer);
         writer = new IndexWriter(dir, config);
     }
     
@@ -57,7 +57,7 @@ public class Indexer {
         return writer.numDocs();
     }
     
-    private static class TextFilesFilter implements FileFilter {
+    public static class TextFilesFilter implements FileFilter {
         public boolean accept(File path) {
             return path.getName().toLowerCase().endsWith(".txt");
         }
@@ -66,7 +66,7 @@ public class Indexer {
     protected Document getDocument(File f) throws Exception {
         Document doc = new Document();
         doc.add(new Field("contents", new FileReader(f)));
-        doc.add(new Field("filename", f.getName(), Field.Store.YES, Field.Index.NOT_ANALYZED));
+        doc.add(new Field("filename", f.getName(),          Field.Store.YES, Field.Index.NOT_ANALYZED));
         doc.add(new Field("fullpath", f.getCanonicalPath(), Field.Store.YES, Field.Index.NOT_ANALYZED));
         return doc;
     }
@@ -77,27 +77,5 @@ public class Indexer {
         writer.addDocument(doc);
     }
     
-    public static void main(String[] args) throws Exception {
-        //parsing args
-        if (args.length != 2) {
-            args = new String[] {"C:/workspace/learn-lucene/src/main/resources/index", "C:/workspace/learn-lucene/src/main/resources/docs"};
-//            throw new IllegalArgumentException("Usage: java "+Indexer.class.getName() + " <index dir> <data dir>");
-        }
-        
-        String indexDir = args[0];
-        String dataDir = args[1];
-        long start = System.currentTimeMillis();
-        Indexer indexer = new Indexer(indexDir);
-        int numIndexed;
-        try {
-            numIndexed = indexer.index(dataDir, new TextFilesFilter());
-        } finally {
-            indexer.close();
-        }
-        
-        long end = System.currentTimeMillis();
-        
-        System.out.println("Indexing "+numIndexed+ " files took "+(end-start) + " milliseconds");
-    }
     
 }
