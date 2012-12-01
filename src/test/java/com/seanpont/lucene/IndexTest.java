@@ -1,8 +1,9 @@
 package com.seanpont.lucene;
 
 import java.io.IOException;
+import java.util.Arrays;
 
-import junit.framework.Assert;
+import static junit.framework.Assert.*;
 
 import org.apache.lucene.analysis.Analyzer;
 import org.apache.lucene.analysis.WhitespaceAnalyzer;
@@ -11,8 +12,14 @@ import org.apache.lucene.document.Field;
 import org.apache.lucene.document.Field.Index;
 import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.index.CorruptIndexException;
+import org.apache.lucene.index.IndexReader;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.index.IndexWriterConfig;
+import org.apache.lucene.index.Term;
+import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
+import org.apache.lucene.search.TermQuery;
+import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.LockObtainFailedException;
 import org.apache.lucene.store.RAMDirectory;
@@ -46,9 +53,6 @@ public class IndexTest {
         }
         
         writer.close();
-        
-        
-        
     }
     
     private IndexWriter getWriter() throws CorruptIndexException, LockObtainFailedException, IOException {
@@ -56,11 +60,38 @@ public class IndexTest {
         IndexWriterConfig config = new IndexWriterConfig(Version.LUCENE_36, analyzer);
         return new IndexWriter(directory, config);
     }
+    
+    protected int getHitCount(String fieldName, String searchString) throws IOException{
+        IndexSearcher searcher = new IndexSearcher(IndexReader.open(directory));
+        Query query = new TermQuery(new Term(fieldName, searchString));
+        int hitCount = searcher.search(query, 1).totalHits;
+        searcher.close();
+        return hitCount;
+    }
+    
+    
+    
+    @Test
+    public void testParts() throws CorruptIndexException, IOException {
+        IndexSearcher searcher = new IndexSearcher(IndexReader.open(directory));
+        Query query = new TermQuery(new Term("text", "Am"));
+        TopDocs search = searcher.search(query, 1);
+        System.out.println(Arrays.toString(search.scoreDocs));
+    }
+    
 
     @Test
-    public void test() {
+    public void testIndexWriter() throws IOException {
+        IndexWriter writer = getWriter();
+        assertEquals(ids.length, writer.numDocs());
+    }
 
-    
+    @Test
+    public void testIndexReader() throws CorruptIndexException, IOException {
+        IndexReader reader = IndexReader.open(directory);
+        assertEquals(ids.length, reader.maxDoc());
+        assertEquals(ids.length, reader.numDocs());
+        reader.close();
     }
 
 }
